@@ -52,7 +52,7 @@ class SubjectTest extends TestCase
         $this->assertEquals($sub, $subject->getSubject());
     }
 
-    public function organisationProvider()
+    public function contextProvider()
     {
         return [
             ['acme'],
@@ -61,13 +61,13 @@ class SubjectTest extends TestCase
     }
 
     /**
-     * @dataProvider organisationProvider
+     * @dataProvider contextProvider
      */
-    public function testSetGetOrganisationPass($organisation)
+    public function testSetGetContextPass($context)
     {
         $subject = $this->createSubject();
 
-        $this->assertInstanceOf(Subject::class, $subject->setOrganisation($organisation));
-        $this->assertEquals($organisation, $subject->getOrganisation());
+        $this->assertInstanceOf(Subject::class, $subject->setContext($context));
+        $this->assertEquals($context, $subject->getContext());
     }
 }
