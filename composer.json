@@ -1,5 +1,5 @@
 {
-    "name": "elective/security-bundle",
+    "name": "electivetechnology/security-bundle",
     "type": "symfony-bundle",
     "description": "Elective Security Bundle",
     "keywords": ["elective", "symfony", "security", "api"],
