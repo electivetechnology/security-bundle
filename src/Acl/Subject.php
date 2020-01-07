@@ -30,7 +30,7 @@ class Subject
      */
     private $context;
 
-    public function __construct($name, $subject = null, $context = null)
+    public function __construct($name = null, $subject = null, $context = null)
     {
         $this->setName($name);
         $this->setSubject($subject);

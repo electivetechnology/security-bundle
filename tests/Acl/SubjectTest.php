@@ -49,6 +49,25 @@ class SubjectTest extends TestCase
         $subject = $this->createSubject();
 
         $this->assertInstanceOf(Subject::class, $subject->setSubject($sub));
-        $this->assertEquals($name, $subject->getSubject());
+        $this->assertEquals($sub, $subject->getSubject());
+    }
+
+    public function organisationProvider()
+    {
+        return [
+            ['acme'],
+            ['acmeinc'],
+        ];
+    }
+
+    /**
+     * @dataProvider organisationProvider
+     */
+    public function testSetGetOrganisationPass($organisation)
+    {
+        $subject = $this->createSubject();
+
+        $this->assertInstanceOf(Subject::class, $subject->setOrganisation($organisation));
+        $this->assertEquals($organisation, $subject->getOrganisation());
     }
 }
