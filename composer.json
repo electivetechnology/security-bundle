@@ -11,10 +11,20 @@
         }
     ],
     "require": {
-        "php": "^7.1.3"
+        "php": "^7.0.8"
+    },
+    "require-dev": {
+        "symfony/phpunit-bridge": "^4.3|^5.0"
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true
     },
     "autoload": {
-        "psr-4": { "Elective\\SecurityBundle\\": "" }
+        "psr-4": { "Elective\\SecurityBundle\\": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Elective\\SecurityBundle\\Tests\\": "tests/" }
     },
     "minimum-stability": "stable"
 }
