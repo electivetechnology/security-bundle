@@ -14,11 +14,11 @@ class SubjectTest extends TestCase
 
     public function nameProvider()
     {
-        return array(
-            'acme',
-            'foo',
-            'user'
-        );
+        return [
+            ['acme'],
+            ['foo'],
+            ['user']
+        ];
     }
 
     /**
@@ -30,5 +30,25 @@ class SubjectTest extends TestCase
 
         $this->assertInstanceOf(Subject::class, $subject->setName($name));
         $this->assertEquals($name, $subject->getName());
+    }
+
+    public function subjectProvider()
+    {
+        return [
+            ['acme'],
+            [123],
+            [new \StdClass()]
+        ];
+    }
+
+    /**
+     * @dataProvider subjectProvider
+     */
+    public function testSetGetSubjectPass($sub)
+    {
+        $subject = $this->createSubject();
+
+        $this->assertInstanceOf(Subject::class, $subject->setSubject($sub));
+        $this->assertEquals($name, $subject->getSubject());
     }
 }
