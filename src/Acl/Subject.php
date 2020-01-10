@@ -3,7 +3,7 @@
 namespace Elective\SecurityBundle\Acl;
 
 /**
- * Elective\SecurityBundle\Acl
+ * Elective\SecurityBundle\Acl\Subject
  *
  * @author Kris Rybak <kris@elective.io>
  */

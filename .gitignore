@@ -1,0 +1,7 @@
+/vendor/
+.vscode
+.DS_Store
+
+# Tests cache
+.phpcs-cache
+.phpunit.result.cache
