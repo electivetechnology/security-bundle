@@ -9,6 +9,8 @@ use Symfony\Component\Security\Http\Authorization\AccessDeniedHandlerInterface;
 
 /**
  * Elective\SecurityBundle\Handler\AccessDeniedHandler
+ *
+ * @author Kris Rybak <kris@elective.io>
  */
 class AccessDeniedHandler implements AccessDeniedHandlerInterface
 {

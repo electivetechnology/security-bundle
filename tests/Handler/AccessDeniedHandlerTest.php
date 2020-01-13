@@ -1,6 +1,6 @@
 <?php
 
-namespace Elective\SecurityBundle\Tests\Acl;
+namespace Elective\SecurityBundle\Tests\Handler;
 
 use Elective\SecurityBundle\Handler\AccessDeniedHandler;
 use Symfony\Component\HttpFoundation\Request;

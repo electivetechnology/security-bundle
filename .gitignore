@@ -5,3 +5,4 @@
 # Tests cache
 .phpcs-cache
 .phpunit.result.cache
+/coverage/
