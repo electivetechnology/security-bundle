@@ -28,7 +28,7 @@ class JwtDecoder implements TokenDecoderInterface
     /**
      * @var array
      */
-    private $data;
+    private $data = [];
 
     public function __construct(JWTEncoderInterface $encoder, TokenStorageInterface $tokenStorage)
     {
