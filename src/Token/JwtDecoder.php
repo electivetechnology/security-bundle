@@ -116,6 +116,10 @@ class JwtDecoder implements TokenDecoderInterface
     {
         $data = array();
 
+        if (empty($credentials)) {
+            return $data;
+        }
+
         try {
             $decoded = $this->encoder->decode($credentials);
             $data = !is_null($decoded) ? $decoded : [];
