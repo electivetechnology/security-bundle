@@ -2,6 +2,8 @@
 
 namespace Elective\SecurityBundle\Token;
 
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+
 /**
  * Elective\SecurityBundle\Token\TokenDecoderInterface
  *
@@ -9,7 +11,7 @@ namespace Elective\SecurityBundle\Token;
  */
 interface TokenDecoderInterface
 {
-    public function decode($credentials): array;
+    public function decode(TokenInterface $token): array;
 
     public function getData(): ?array;
 
