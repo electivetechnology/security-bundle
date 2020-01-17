@@ -4,9 +4,14 @@ namespace Elective\SecurityBundle\Token;
 
 use Elective\SecurityBundle\Exception\TokenDecoderException;
 use Elective\SecurityBundle\Token\TokenDecoderInterface;
+use Lcobucci\JWT\Parser;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\JWTDecodeFailureException;
+use Lexik\Bundle\JWTAuthenticationBundle\Security\Authentication\Token\JWTUserToken;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Guard\Token\PostAuthenticationGuardToken;
+use \InvalidArgumentException;
 
 /**
  * Elective\SecurityBundle\Token\JwtDecoder
@@ -21,6 +26,11 @@ class JwtDecoder implements TokenDecoderInterface
     private $encoder;
 
     /**
+     * @var Parser
+     */
+    private $parser;
+
+    /**
      * @var TokenStorageInterface
      */
     private $tokenStorage;
@@ -30,11 +40,17 @@ class JwtDecoder implements TokenDecoderInterface
      */
     private $data = [];
 
-    public function __construct(JWTEncoderInterface $encoder, TokenStorageInterface $tokenStorage)
+    public function __construct(JWTEncoderInterface $encoder, TokenStorageInterface $tokenStorage, $parser = null)
     {
+        if (!$parser) {
+            $parser = new Parser();
+        }
+
         $this->encoder      = $encoder;
         $this->tokenStorage = $tokenStorage;
-        $this->data         = $this->decode($tokenStorage->getToken()->getCredentials());
+        $this->parser       = $parser;        
+
+        $this->data = $this->decode($tokenStorage->getToken());
     }
 
     /**
@@ -56,6 +72,29 @@ class JwtDecoder implements TokenDecoderInterface
     public function setEncoder(?JWTEncoderInterface $encoder): self
     {
         $this->encoder = $encoder;
+
+        return $this;
+    }
+
+    /**
+     * Get parser
+     *
+     * @return Parser
+     */
+    public function getParser(): ?Parser
+    {
+        return $this->parser;
+    }
+
+    /**
+     * Set parser
+     *
+     * @param   Parser $parser
+     * @return  TokenDecoderInterface
+     */
+    public function setParser(?Parser $parser): self
+    {
+        $this->parser = $parser;
 
         return $this;
     }
@@ -112,22 +151,50 @@ class JwtDecoder implements TokenDecoderInterface
      * @param   string      $credentials
      * @return  array       Array of decoded Token payload
      */
-    public function decode($credentials): array
+    public function decode(TokenInterface $token): array
     {
         $data = array();
 
+        if (is_a($token, PostAuthenticationGuardToken::class) && isset($token->rawToken)) {
+            $credentials = $token->rawToken;
+            $data = $this->decodeGuardToken($credentials);
+        } elseif (is_a($token, JWTUserToken::class)) {
+            $credentials = $token->getCredentials();
+            $data = $this->decodeJWTUserToken($credentials);
+        }
+
+        $this->data = $data;
+
+        return $data;
+    }
+    public function decodeGuardToken($credentials): array
+    {
         if (empty($credentials)) {
-            return $data;
+            return [];
         }
 
         try {
-            $decoded = $this->encoder->decode($credentials);
+            $decoded = $this->getParser()->parse($credentials);
+            $data = !is_null($decoded->getClaims()) ? $decoded->getClaims() : [];
+        } catch (InvalidArgumentException $e) {
+            throw new TokenDecoderException('Could not decode token data');
+        }
+
+        return $data;
+    }
+
+    public function decodeJWTUserToken($credentials): array
+    {
+        if (empty($credentials)) {
+            return [];
+        }
+
+        try {
+            $decoded = $this->getEncoder()->decode($credentials);
             $data = !is_null($decoded) ? $decoded : [];
         } catch (JWTDecodeFailureException $e) {
             throw new TokenDecoderException('Could not decode token data');
         }
-
-        $this->data = $data;
 
         return $data;
     }
