@@ -116,14 +116,14 @@ class JwtAuthenticatorTest extends TestCase
             [['foo' => 'bar'], null],
             [['token' => 'bar'], null],
             [['token' => 'Bearer abc'], null],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time - 3600)->getToken()], null],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time + 3600)->getToken()], null, 'www.example.com'],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time + 3600)->permittedFor('www.example.net')->getToken()], null, 'www.example.com'],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time + 3600)->getToken()], null, null, 'acme'],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time + 3600)->issuedBy('acme')->getToken()], null, null, 'not_acme'],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time + 3600)->getToken()], null],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time + 3600)->withClaim('email', $email)->getToken()], (new User())->setUsername($email)],
-            [['token' => 'Bearer ' . (new Builder())->issuedAt($time)->expiresAt($time - 3600)->withClaim('email', $email)->getToken()], null],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time - 3600)->getToken()], null],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->getToken()], null, 'www.example.com'],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->setAudience('www.example.net')->getToken()], null, 'www.example.com'],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->getToken()], null, null, 'acme'],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->setIssuer('acme')->getToken()], null, null, 'not_acme'],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->getToken()], null],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->set('email', $email)->getToken()], (new User())->setUsername($email)],
+            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time - 3600)->set('email', $email)->getToken()], null],
         );
     }
 
