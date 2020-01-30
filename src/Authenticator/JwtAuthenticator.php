@@ -2,8 +2,8 @@
 
 namespace Elective\SecurityBundle\Authenticator;
 
-use Lcobucci\JWT\Parser;
-use Lcobucci\JWT\ValidationData;
+use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\TokenExtractor\AuthorizationHeaderTokenExtractor;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,9 +12,9 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Guard\AbstractGuardAuthenticator;
+use Elective\SecurityBundle\Token\TokenKeyValidatorInterface;
+use Elective\SecurityBundle\Token\Validator\ValidatorInterface;
 use Elective\SecurityBundle\Entity\User;
-use \InvalidArgumentException;
-use \OutOfBoundsException;
 
 /**
  * Elective\SecurityBundle\Authenticator\JwtAuthenticator
@@ -24,65 +24,67 @@ use \OutOfBoundsException;
 class JwtAuthenticator extends AbstractGuardAuthenticator
 {
     /**
-     * @var string|null
+     * @var ValidatorInterface
      */
-    private $aud;
+    private $validator;
 
     /**
-     * @var string|null
+     * @var TokenKeyValidatorInterface
      */
-    private $iss;
+    private $tokenKeyValidator;
 
-    public function __construct($aud = null, $iss = null)
-    {
-        $this->aud = $aud;
-        $this->iss = $iss;
+    public function __construct(
+        ValidatorInterface $validator,
+        TokenKeyValidatorInterface $tokenKeyValidator = null
+    ) {
+        $this->validator = $validator;
+        $this->tokenKeyValidator = $tokenKeyValidator;
     }
 
     /**
-     * Set Aud
+     * Set validator
      *
-     * @param   string|null $aud  Audience
+     * @param   JWTEncoderInterface|null    $validator
      * @return  AbstractGuardAuthenticator
      */
-    public function setAud(?string $aud): self
+    public function setValidator(?ValidatorInterface $validator): self
     {
-        $this->aud = $aud;
+        $this->validator = $validator;
 
         return $this;
     }
 
     /**
-     * Get Aud
+     * Get validator
      *
-     * @return  string|null     Audience
+     * @return  ValidatorInterface|null
      */
-    public function getAud(): ?string
+    public function getValidator(): ?ValidatorInterface
     {
-        return $this->aud;
+        return $this->validator;
     }
 
     /**
-     * Set Iss
+     * Get TokenKeyValidator
      *
-     * @param   string|null $iss  Issuer
+     * @return TokenKeyValidatorInterface|null
+     */
+    public function getTokenKeyValidator(): ?TokenKeyValidatorInterface
+    {
+        return $this->tokenKeyValidator;
+    }
+
+    /**
+     * Set TokenKeyValidator
+     *
+     * @param   TokenKeyValidatorInterface|null
      * @return  AbstractGuardAuthenticator
      */
-    public function setIss(?string $iss): self
+    public function setTokenKeyValidator(?TokenKeyValidatorInterface $tokenKeyValidator): AbstractGuardAuthenticator
     {
-        $this->iss = $iss;
+        $this->tokenKeyValidator = $tokenKeyValidator;
 
         return $this;
-    }
-
-    /**
-     * Get Iss
-     *
-     * @return  string|null     Issuer
-     */
-    public function getIss(): ?string
-    {
-        return $this->iss;
     }
 
     /**
@@ -101,9 +103,18 @@ class JwtAuthenticator extends AbstractGuardAuthenticator
      */
     public function getCredentials(Request $request)
     {
-        return [
-            'token' => $request->headers->get('authorization'),
-        ];
+        $extractor = new AuthorizationHeaderTokenExtractor(
+            'Bearer',
+            'Authorization'
+        );
+
+        $token = $extractor->extract($request);
+
+        if (!$token) {
+            return false;
+        }
+
+        return $token;
     }
 
     /**
@@ -115,66 +126,23 @@ class JwtAuthenticator extends AbstractGuardAuthenticator
      */
     public function getUser($credentials, UserProviderInterface $userProvider)
     {
-        if (!is_array($credentials) || !isset($credentials['token'])) {
+        // Set initial state of Issuer and Audience
+        $token  = [];
+
+        // Validate the token
+        $token = $this->getValidator()->validate($credentials);
+
+        if (!isset($token['username'])) {
             return;
         }
 
-        $token = $credentials['token'];
-
-        // Only supports Bearer Tokens at the moment
-        if (!stristr($token, 'Bearer')) {
-            return;
-        }
-
-        $bearerToken = str_replace('Bearer ', '', $token);
-
-        try {
-            $apiToken = (new Parser())->parse((string) $bearerToken);
-        } catch (InvalidArgumentException $e) {
-            return;
-        }
-
-        // Validate apiToken
-        $data = new ValidationData();
-        $data->setIssuer($this->getIss());
-        $data->setAudience($this->getAud());
-
-        // Check token claims are set
-        if ($this->getAud()) {
-            try {
-                $aud = $apiToken->getClaim('aud');
-                if ($aud != $this->getAud()) {
-                    return;
-                }
-            } catch (OutOfBoundsException $e) {
+        if (isset($token['key']) && !is_null($this->getTokenKeyValidator())) {
+            if (!$this->getTokenKeyValidator()->validate($token['key'], $token['username'])) {
                 return;
             }
         }
 
-        if ($this->getIss()) {
-            try {
-                $iss = $apiToken->getClaim('iss');
-                if ($iss != $this->getIss()) {
-                    return;
-                }
-            } catch (OutOfBoundsException $e) {
-                return;
-            }
-        }
-
-        try {
-            $email = $apiToken->getClaim('email');
-        } catch (OutOfBoundsException $e) {
-            return;
-        }
-
-        if (!$apiToken->validate($data)) {
-            return;
-        }
-
-        $user = new User();
-        $user
-            ->setUsername($apiToken->getClaim('email'));
+        $user = $userProvider->loadUserByUsername($token['username']);
 
         return $user;
     }
