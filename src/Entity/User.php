@@ -129,4 +129,9 @@ class User implements UserInterface
 
         return null;
     }
+
+    public function getIsActive()
+    {
+        return true;
+    }
 }

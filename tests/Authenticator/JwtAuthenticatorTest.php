@@ -4,6 +4,7 @@ namespace Elective\SecurityBundle\Tests\Authenticator;
 
 use Elective\SecurityBundle\Authenticator\JwtAuthenticator;
 use Elective\SecurityBundle\Entity\User;
+use Elective\SecurityBundle\Token\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -15,49 +16,11 @@ use PHPUnit\Framework\TestCase;
 
 class JwtAuthenticatorTest extends TestCase
 {
-    protected function createAuthenticator($aud = null, $iss = null): JwtAuthenticator
+    protected function createAuthenticator(): JwtAuthenticator
     {
-        return new JwtAuthenticator($aud, $iss);
-    }
+        $validator = $this->createMock(ValidatorInterface::class);
 
-    public function issProvider()
-    {
-        return array(
-            ['https://accounts.google.com'],
-            ['https://recii.io'],
-            [null],
-        );
-    }
-
-    /**
-     * @dataProvider issProvider
-     */
-    public function testGetSetIss($iss)
-    {
-        $authenticator = $this->createAuthenticator();
-
-        $this->assertInstanceOf(JwtAuthenticator::class, $authenticator->setIss($iss));
-        $this->assertEquals($iss, $authenticator->getIss());
-    }
-
-    public function audProvider()
-    {
-        return array(
-            ['KlsmH6kGfhQOwuRy4jr6'],
-            ['Tt284abc'],
-            [null],
-        );
-    }
-
-    /**
-     * @dataProvider audProvider
-     */
-    public function testGetSetAud($aud)
-    {
-        $authenticator = $this->createAuthenticator();
-
-        $this->assertInstanceOf(JwtAuthenticator::class, $authenticator->setAud($aud));
-        $this->assertEquals($aud, $authenticator->getAud());
+        return new JwtAuthenticator($validator);
     }
 
     public function supportsDataProvider()
@@ -86,13 +49,13 @@ class JwtAuthenticatorTest extends TestCase
         $token1 = 'abc';
         $token2 = 'abc123';
         $request1 = new Request();
-        $request1->headers->set('authorization', $token1);
+        $request1->headers->set('authorization', 'Bearer ' . $token1);
         $request2 = new Request();
-        $request2->headers->set('authorization', $token2);
+        $request2->headers->set('authorization',  'Bearer ' . $token2);
 
         return array(
-            [$request1, ['token' => $token1]],
-            [$request2, ['token' => $token2]],
+            [$request1, $token1],
+            [$request2, $token2],
         );
     }
 
@@ -113,17 +76,6 @@ class JwtAuthenticatorTest extends TestCase
 
         return array(
             ['abc', null],
-            [['foo' => 'bar'], null],
-            [['token' => 'bar'], null],
-            [['token' => 'Bearer abc'], null],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time - 3600)->getToken()], null],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->getToken()], null, 'www.example.com'],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->setAudience('www.example.net')->getToken()], null, 'www.example.com'],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->getToken()], null, null, 'acme'],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->setIssuer('acme')->getToken()], null, null, 'not_acme'],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->getToken()], null],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time + 3600)->set('email', $email)->getToken()], (new User())->setUsername($email)],
-            [['token' => 'Bearer ' . (new Builder())->setIssuedAt($time)->setExpiration($time - 3600)->set('email', $email)->getToken()], null],
         );
     }
 
