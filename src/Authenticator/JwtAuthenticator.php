@@ -167,7 +167,8 @@ class JwtAuthenticator extends AbstractGuardAuthenticator
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception)
     {
         $data = [
-            'message' => strtr($exception->getMessageKey(), $exception->getMessageData())
+            'message' => strtr($exception->getMessageKey(), $exception->getMessageData()),
+            'code' => Response::HTTP_FORBIDDEN
 
             // or to translate this message
             // $this->translator->trans($exception->getMessageKey(), $exception->getMessageData())
@@ -183,7 +184,8 @@ class JwtAuthenticator extends AbstractGuardAuthenticator
     {
         $data = [
             // you might translate this message
-            'message' => 'Authentication Required'
+            'message' => 'Authentication Required',
+            'code' => Response::HTTP_UNAUTHORIZED
         ];
 
         return new JsonResponse($data, Response::HTTP_UNAUTHORIZED);
