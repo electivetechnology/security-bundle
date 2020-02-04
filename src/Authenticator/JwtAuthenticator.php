@@ -15,6 +15,7 @@ use Symfony\Component\Security\Guard\AbstractGuardAuthenticator;
 use Elective\SecurityBundle\Token\TokenKeyValidatorInterface;
 use Elective\SecurityBundle\Token\Validator\ValidatorInterface;
 use Elective\SecurityBundle\Entity\User;
+use Elective\SecurityBundle\Exception\AuthenticationException as ElectiveAuthenticationException;
 
 /**
  * Elective\SecurityBundle\Authenticator\JwtAuthenticator
@@ -166,13 +167,19 @@ class JwtAuthenticator extends AbstractGuardAuthenticator
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception)
     {
-        $data = [
-            'message' => strtr($exception->getMessageKey(), $exception->getMessageData()),
-            'code' => Response::HTTP_FORBIDDEN
+        if ($exception instanceof ElectiveAuthenticationException) {
+            $data = [
+                'message' => $exception->getMessage(),
+                'code' => $exception->getCode()
+            ];
 
-            // or to translate this message
-            // $this->translator->trans($exception->getMessageKey(), $exception->getMessageData())
-        ];
+            return new JsonResponse($data, Response::HTTP_UNAUTHORIZED);
+        } else {
+            $data = [
+                'message' => strtr($exception->getMessageKey(), $exception->getMessageData()),
+                'code' => Response::HTTP_FORBIDDEN
+            ];
+        }
 
         return new JsonResponse($data, Response::HTTP_FORBIDDEN);
     }
