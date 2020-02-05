@@ -5,6 +5,8 @@ namespace Elective\SecurityBundle\Tests\Authenticator;
 use Elective\SecurityBundle\Authenticator\JwtAuthenticator;
 use Elective\SecurityBundle\Entity\User;
 use Elective\SecurityBundle\Token\Validator\ValidatorInterface;
+use Elective\SecurityBundle\Token\TokenKeyValidatorInterface;
+use Elective\SecurityBundle\Exception\AuthenticationException as ElectiveAuthenticationException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -18,9 +20,27 @@ class JwtAuthenticatorTest extends TestCase
 {
     protected function createAuthenticator(): JwtAuthenticator
     {
+        $authenticator = $this->createMock(ValidatorInterface::class);
+
+        return new JwtAuthenticator($authenticator);
+    }
+
+    public function testSetGetValidator()
+    {
+        $authenticator = $this->createAuthenticator();
         $validator = $this->createMock(ValidatorInterface::class);
 
-        return new JwtAuthenticator($validator);
+        $this->assertInstanceOf(JwtAuthenticator::class, $authenticator->setValidator($validator));
+        $this->assertEquals($validator, $authenticator->getValidator());
+    }
+
+    public function testSetGetTokenKeyValidator()
+    {
+        $authenticator = $this->createAuthenticator();
+        $keyValidator = $this->createMock(TokenKeyValidatorInterface::class);
+
+        $this->assertInstanceOf(JwtAuthenticator::class, $authenticator->setTokenKeyValidator($keyValidator));
+        $this->assertEquals($keyValidator, $authenticator->getTokenKeyValidator());
     }
 
     public function supportsDataProvider()
@@ -52,10 +72,12 @@ class JwtAuthenticatorTest extends TestCase
         $request1->headers->set('authorization', 'Bearer ' . $token1);
         $request2 = new Request();
         $request2->headers->set('authorization',  'Bearer ' . $token2);
+        $request3 = new Request();
 
         return array(
             [$request1, $token1],
             [$request2, $token2],
+            [$request3, false],
         );
     }
 
@@ -90,6 +112,30 @@ class JwtAuthenticatorTest extends TestCase
         $this->assertEquals($expected, $authenticator->getUser($credentials, $provider));
     }
 
+    public function getUserWithKeyProvider()
+    {
+        return array(
+            array(['key' => 'abc', 'username' => 'john']),
+            array(['key' => 'abc', 'username' => 'john'], 'john', true),
+        );
+    }
+
+    /**
+     * @dataProvider getUserWithKeyProvider
+     */
+    public function testGetUserWithKey($token = [], $expected = null, $keyValidatorResult = false, $credentials = '')
+    {
+        $authenticator = $this->createAuthenticator();
+        $authenticator->getValidator()->method('validate')->willReturn($token);
+        $provider = $this->createMock(UserProviderInterface::class);
+        $provider->method('loadUserByUsername')->willReturn($expected);
+        $keyValidator = $this->createMock(TokenKeyValidatorInterface::class);
+        $keyValidator->method('validate')->willReturn($keyValidatorResult);
+        $authenticator->setTokenKeyValidator($keyValidator);
+
+        $this->assertEquals($expected, $authenticator->getUser($credentials, $provider));
+    }
+
     public function testCheckCredentials()
     {
         $authenticator = $this->createAuthenticator();
@@ -109,14 +155,25 @@ class JwtAuthenticatorTest extends TestCase
         $this->assertNull($authenticator->onAuthenticationSuccess($request, $user, 'providerKey'));
     }
 
-    public function testOnAuthenticationFailure()
+    public function onAuthenticationFailureProvider()
+    {
+        return array(
+            [Response::HTTP_FORBIDDEN, new AuthenticationException()],
+            [Response::HTTP_UNAUTHORIZED, new ElectiveAuthenticationException()],
+        );
+    }
+
+    /**
+     * @dataProvider onAuthenticationFailureProvider
+     */
+    public function testOnAuthenticationFailure($code, $exception)
     {
         $authenticator  = $this->createAuthenticator();
         $request        = $this->createMock(Request::class);
-        $exception      = new AuthenticationException();
+        // $exception      = new AuthenticationException();
 
         $this->assertInstanceOf(Response::class, $response = $authenticator->onAuthenticationFailure($request, $exception));
-        $this->assertEquals(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        $this->assertEquals($code, $response->getStatusCode());
     }
 
     public function testStart()

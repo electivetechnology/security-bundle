@@ -114,4 +114,11 @@ class UserTest extends WebTestCase
         $this->assertNull($user->getSalt());
         $this->assertNull($user->getPassword());
     }
+
+    public function testGetIsActive()
+    {
+        $user = $this->createUser();
+
+        $this->assertTrue($user->getIsActive());
+    }
 }

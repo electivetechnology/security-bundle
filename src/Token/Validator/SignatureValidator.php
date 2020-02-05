@@ -6,6 +6,7 @@ use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\JWTDecodeFailureException;
 use Elective\SecurityBundle\Exception\TokenDecoderException;
 use Elective\SecurityBundle\Exception\AuthenticationException;
+use Elective\SecurityBundle\Token\Validator\ValidatorInterface;
 
 /**
  * Elective\SecurityBundle\Token\Validator\SignatureValidator
