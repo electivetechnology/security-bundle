@@ -4,7 +4,9 @@ namespace Elective\SecurityBundle\Token\Validator;
 
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\ValidationData;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Elective\SecurityBundle\Exception\AuthenticationException;
+use Elective\SecurityBundle\Token\Validator\ValidatorInterface;
+use Elective\SecurityBundle\Exception\TokenDecoderException;
 use \InvalidArgumentException;
 use \OutOfBoundsException;
 
@@ -91,7 +93,10 @@ class IssAudClaimValidator implements ValidatorInterface
         try {
             $apiToken = (new Parser())->parse((string) $credentials);
         } catch (InvalidArgumentException $e) {
-            throw $e; 
+            throw new AuthenticationException(
+                'JWT is invalid',
+                TokenDecoderException::TOKEN_DECODER_INVALID_TOKEN
+            );
         }
 
         // Check token claims are set
@@ -99,10 +104,16 @@ class IssAudClaimValidator implements ValidatorInterface
             try {
                 $aud = $apiToken->getClaim('aud');
                 if ($aud != $this->getAud()) {
-                    throw new AuthenticationException();
+                    throw new AuthenticationException(
+                        'Invalid Audience',
+                        TokenDecoderException::TOKEN_DECODER_INVALID_AUD
+                    );
                 }
             } catch (OutOfBoundsException $e) {
-                throw new AuthenticationException();
+                throw new AuthenticationException(
+                    'JWT is missing Audience',
+                    TokenDecoderException::TOKEN_DECODER_INVALID_TOKEN
+                );
             }
         }
 
@@ -110,10 +121,16 @@ class IssAudClaimValidator implements ValidatorInterface
             try {
                 $iss = $apiToken->getClaim('iss');
                 if ($iss != $this->getIss()) {
-                    throw new AuthenticationException();
+                    throw new AuthenticationException(
+                        'Invalid Issuer',
+                        TokenDecoderException::TOKEN_DECODER_INVALID_ISS
+                    );
                 }
             } catch (OutOfBoundsException $e) {
-                throw new AuthenticationException();
+                throw new AuthenticationException(
+                    'JWT is missing Issuer',
+                    TokenDecoderException::TOKEN_DECODER_INVALID_TOKEN
+                );
             }
         }
 
@@ -123,14 +140,20 @@ class IssAudClaimValidator implements ValidatorInterface
         $data->setAudience($this->getAud());
 
         if (!$apiToken->validate($data)) {
-            throw new AuthenticationException();
+            throw new AuthenticationException(
+                'JWT is invalid',
+                TokenDecoderException::TOKEN_DECODER_INVALID_TOKEN
+            );
         }
 
         // Email claim is required for this type of token
         try {
             $apiToken->getClaim('email');
         } catch (OutOfBoundsException $e) {
-            throw new AuthenticationException();
+            throw new AuthenticationException(
+                'JWT is missing email claim',
+                TokenDecoderException::TOKEN_DECODER_MISSING_CLAIM
+            );
         }
 
         // Turn Token class into array and swap 'email' for 'username' property
