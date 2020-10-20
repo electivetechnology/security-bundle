@@ -11,7 +11,7 @@ This project is compatible with following Symfony versions:
 
 ## Requirements
 
-* PHP 7.x
+* PHP 7.1 and up
 
 ## Installation
 
