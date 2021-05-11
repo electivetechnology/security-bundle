@@ -9,9 +9,5 @@ namespace Elective\SecurityBundle\Entity;
  */
 interface ServiceAccountInterface
 {
-    public function decode(TokenInterface $token): array;
-
-    public function getData(): ?array;
-
-    public function getAttribute($attribute);
+    public function findOneByValidToken(string $token);
 }

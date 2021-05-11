@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Security\Token;
+namespace Elective\SecurityBundle\Authenticator;
 
-use Doctrine\ORM\EntityManagerInterface;
+use Elective\SecurityBundle\Entity\ServiceAccountInterface;
+use Elective\SecurityBundle\Token\Validator\ValidatorInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\TokenExtractor\AuthorizationHeaderTokenExtractor;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,26 +18,31 @@ use Elective\SecurityBundle\Exception\AuthenticationException as ElectiveAuthent
 /**
  * Elective\SecurityBundle\Authenticator\TokenAuthenticator
  *
- * @author Kris Rybak <kris@elective.io>
+ * @author Chris Dixon <chris@elective.io>
  */
 class TokenAuthenticator extends AbstractGuardAuthenticator
 {
-    /**
-     * @var EntityManagerInterface
-     */
-    private $manager;
-
     /**
      * @var ServiceAccountInterface
      */
     private $serviceAccount;
 
     public function __construct(
-        EntityManagerInterface $manager,
-        EntityManagerInterface $serviceAccount
+        ServiceAccountInterface $serviceAccount
     ) {
-        $this->manager = $manager;
+        $this->setServiceAccount($serviceAccount);
+    }
+
+    public function setServiceAccount(?ServiceAccountInterface $serviceAccount): self
+    {
         $this->serviceAccount = $serviceAccount;
+
+        return $this;
+    }
+
+    public function getServiceAccount(): ?ServiceAccountInterface
+    {
+        return $this->serviceAccount;
     }
     /**
      * Called on every request to decide if this authenticator should be
@@ -54,7 +60,6 @@ class TokenAuthenticator extends AbstractGuardAuthenticator
      */
     public function getCredentials(Request $request)
     {
-        dump($this->serviceAccount);die;
         $extractor = new AuthorizationHeaderTokenExtractor(
             'Bearer',
             'Authorization'
@@ -82,7 +87,7 @@ class TokenAuthenticator extends AbstractGuardAuthenticator
      */
     public function getUser($credentials, UserProviderInterface $userProvider)
     {
-        $serviceAccount = $this->manager->getRepository($this->serviceAccount::class)
+        $serviceAccount = $this->serviceAccount
             ->findOneByValidToken($credentials);
 
         if ($serviceAccount && $serviceAccount->getUser()) {
